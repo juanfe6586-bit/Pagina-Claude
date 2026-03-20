@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#faf6f0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Pâtisserie Dorée — Repostería Artesanal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* ─── iOS SAFARI FIXES ────────────────────────────────────────────
+   * 1. backdrop-filter MUST use -webkit- prefix + fixed pixel values (no CSS vars)
+   * 2. position:fixed elements need env(safe-area-inset-*) for notch/home-bar
+   * 3. 100vh != visual viewport on iOS → use -webkit-fill-available / dvh
+   * 4. overflow:hidden on <body> doesn't lock scroll on iOS → need touch-action
+   * 5. input font-size must be ≥16px to prevent auto-zoom on iOS
+   * 6. -webkit-overflow-scrolling:touch for momentum scroll inside panels
+   * 7. Transforms on fixed children can break on older WebKit → use will-change
+   * 8. SVG filter in body::before can render wrong on Safari → skip on iOS
+  ──────────────────────────────────────────────────────────────────── */
+
+  :root {
+    --cream: #faf6f0;
+    --warm: #f5ede0;
+    --caramel: #c8873a;
+    --gold: #e4a84b;
+    --dark: #1a1208;
+    --brown: #5c3d1e;
+    --rose: #e8c4b0;
+    --text: #2d1f0e;
+    --muted: #7a5c3c;
+    --nav-h: 68px;
+    --btm-h: 70px;
+    /* safe area for iPhone notch / home indicator */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bot: env(safe-area-inset-bottom, 0px);
+  }
+
+  *, *::before, *::after {
+    margin: 0; padding: 0; box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--cream);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+    /* FIX: iOS scroll lock helper — actual lock done via JS touch-action */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Grain overlay — use a simpler approach so Safari doesn't choke */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    /* FIX: skip SVG filter — use CSS noise pattern instead for Safari compat */
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEWFhYWDg4N3d3dtbW17e3t1dXWBgYGHh4t5eXlzc3OLi4ubm5uVlZWPj4+NjY19fX2JiYl/f39ra2uRkZGZmZlpaWmXl5dvb29xcXGTk5NnZ2c8TV1mAAAAG3RSTlNAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEAvEOwtAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4gwSFi4yZgWwFAAAACZJREFUeNrtwQEBAAAAgiD/r25IQAEAAAAAAAAAAAAAAAAAAADgwQABAAATY0AFTQAAAABJRU5ErkJggg==");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.025;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0;
+    /* FIX: account for iPhone notch */
+    top: var(--safe-top);
+    width: 100%;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 60px;
+    height: var(--nav-h);
+    /* FIX: both prefixed and unprefixed backdrop-filter with fixed px value */
+    background: rgba(250, 246, 240, 0.93);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(200, 135, 58, 0.12);
+    /* FIX: will-change prevents Safari from dropping the blur */
+    will-change: transform;
+  }
+
+  .nav-logo { font-family: 'Playfair Display', serif; font-size: 1.45rem; font-style: italic; color: var(--brown); }
+  .nav-logo span { color: var(--caramel); font-style: normal; font-weight: 700; }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .nav-links { display: flex; gap: 32px; list-style: none; }
+  .nav-links a { text-decoration: none; color: var(--muted); font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--caramel); }
+
+  .hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 10px; border-radius: 10px; -webkit-appearance: none; }
+  .hamburger span { display: block; width: 22px; height: 2px; background: var(--brown); border-radius: 2px; transition: transform 0.3s, opacity 0.3s; }
+  .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; }
+  .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  .cart-btn {
+    background: var(--caramel); color: white; border: none;
+    padding: 10px 20px; border-radius: 50px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    min-height: 44px; min-width: 44px;
+    -webkit-appearance: none;
+    transition: background 0.2s;
+  }
+  .cart-btn:active { background: var(--brown); }
+  .cart-count { background: white; color: var(--caramel); border-radius: 50%; width: 20px; height: 20px; font-size: 0.72rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+  /* Mobile drawer */
+  .mobile-drawer {
+    position: fixed;
+    top: calc(var(--safe-top) + var(--nav-h));
+    left: 0; right: 0;
+    background: var(--cream);
+    border-bottom: 1px solid var(--rose);
+    z-index: 99;
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    /* FIX: no backdrop-filter on drawer — causes flicker on iOS */
+  }
+  .mobile-drawer.open { max-height: 280px; padding: 12px 24px 20px; }
+  .mobile-drawer a { display: block; text-decoration: none; color: var(--brown); font-size: 1.05rem; padding: 14px 0; border-bottom: 1px solid rgba(200,135,58,0.1); font-family: 'Playfair Display', serif; min-height: 48px; display: flex; align-items: center; }
+  .mobile-drawer a:last-child { border-bottom: none; }
+
+  /* ── HERO ── */
+  .hero {
+    /* FIX: use -webkit-fill-available fallback before dvh for older iOS */
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    min-height: 100dvh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    padding: calc(var(--safe-top) + var(--nav-h) + 40px) 60px 80px;
+    gap: 50px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::after { content: ''; position: absolute; right: -200px; top: -200px; width: 700px; height: 700px; background: radial-gradient(circle, rgba(228,168,75,0.1) 0%, transparent 70%); pointer-events: none; }
+
+  .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--warm); border: 1px solid rgba(200,135,58,0.3); padding: 6px 16px; border-radius: 50px; font-size: 0.78rem; color: var(--caramel); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 22px; animation: fadeUp 0.8s ease both; }
+  .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.6rem, 5vw, 5.5rem); line-height: 1.05; color: var(--dark); margin-bottom: 18px; animation: fadeUp 0.8s 0.1s ease both; }
+  .hero h1 em { font-style: italic; color: var(--caramel); }
+  .hero p { font-size: 0.98rem; color: var(--muted); line-height: 1.7; max-width: 440px; margin-bottom: 32px; animation: fadeUp 0.8s 0.2s ease both; }
+  .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; animation: fadeUp 0.8s 0.3s ease both; }
+
+  .btn-primary { background: var(--dark); color: white; padding: 14px 28px; border-radius: 50px; text-decoration: none; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.04em; cursor: pointer; border: none; font-family: 'DM Sans', sans-serif; min-height: 48px; display: inline-flex; align-items: center; -webkit-appearance: none; transition: background 0.2s; }
+  .btn-primary:active { background: var(--caramel); }
+  .btn-outline { background: transparent; color: var(--brown); padding: 14px 28px; border-radius: 50px; text-decoration: none; font-size: 0.9rem; letter-spacing: 0.04em; border: 1.5px solid var(--rose); cursor: pointer; font-family: 'DM Sans', sans-serif; min-height: 48px; display: inline-flex; align-items: center; -webkit-appearance: none; transition: all 0.2s; }
+  .btn-outline:active { border-color: var(--caramel); color: var(--caramel); }
+
+  .hero-visual { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 260px 170px; gap: 10px; animation: fadeUp 0.8s 0.15s ease both; }
+  .hero-card { border-radius: 18px; overflow: hidden; position: relative; }
+  .hero-card:first-child { grid-row: 1/3; }
+  .img-nyroll { background: linear-gradient(135deg,#c8873a 0%,#e4a84b 40%,#f5c47a 70%,#8b4513 100%); display: flex; align-items: center; justify-content: center; height: 100%; font-size: 4.5rem; }
+  .img-macaron { background: linear-gradient(135deg,#fde8f0,#f4b8d0,#e896b8); display: flex; align-items: center; justify-content: center; height: 100%; font-size: 3rem; }
+  .img-cake { background: linear-gradient(135deg,#fde8cc,#f5c47a,#e49a40); display: flex; align-items: center; justify-content: center; height: 100%; font-size: 2.8rem; }
+  .hero-card-label { position: absolute; bottom: 12px; left: 12px; background: rgba(250,246,240,0.9); padding: 5px 12px; border-radius: 50px; font-size: 0.74rem; font-weight: 500; color: var(--brown); /* FIX: no backdrop-filter on small overlays — flickers on iOS */ }
+
+  /* ── SECTION HEADER ── */
+  .section-header { text-align: center; margin-bottom: 36px; }
+  .section-eyebrow { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--caramel); margin-bottom: 10px; }
+  .section-title { font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 3vw, 3rem); color: var(--dark); line-height: 1.2; }
+  .section-title em { font-style: italic; color: var(--caramel); }
+
+  /* ── CATEGORIES ── */
+  .categories { padding: 32px 24px 0; display: flex; gap: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; scroll-snap-type: x mandatory; }
+  .categories::-webkit-scrollbar { display: none; }
+  .cat-pill { background: white; border: 1.5px solid var(--rose); color: var(--brown); padding: 10px 20px; border-radius: 50px; font-size: 0.85rem; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; flex-shrink: 0; scroll-snap-align: start; min-height: 44px; -webkit-appearance: none; transition: all 0.2s; }
+  .cat-pill.active, .cat-pill:active { background: var(--caramel); border-color: var(--caramel); color: white; }
+
+  /* ── PRODUCTS ── */
+  .products { padding: 32px 24px 100px; background: var(--warm); }
+  .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+  .product-card { background: var(--cream); border-radius: 20px; overflow: hidden; position: relative; cursor: pointer; transition: transform 0.25s, box-shadow 0.25s; }
+  @media (hover:hover) { .product-card:hover { transform: translateY(-5px); box-shadow: 0 16px 40px rgba(92,61,30,0.1); } }
+  .product-card:active { transform: scale(0.98); }
+  .product-img { height: 200px; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; position: relative; }
+  .product-img::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(26,18,8,0.06), transparent 50%); }
+  .product-badge { position: absolute; top: 12px; right: 12px; background: var(--caramel); color: white; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; padding: 4px 10px; border-radius: 50px; text-transform: uppercase; z-index: 1; }
+  .product-info { padding: 18px 18px 20px; }
+  .product-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--dark); margin-bottom: 6px; }
+  .product-desc { font-size: 0.83rem; color: var(--muted); line-height: 1.55; margin-bottom: 16px; }
+  .product-footer { display: flex; justify-content: space-between; align-items: center; }
+  .product-price { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--caramel); font-weight: 700; }
+  .product-price span { font-size: 0.75rem; color: var(--muted); font-family: 'DM Sans', sans-serif; font-weight: 300; }
+  .add-btn { background: var(--dark); color: white; border: none; width: 44px; height: 44px; border-radius: 50%; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; flex-shrink: 0; -webkit-appearance: none; transition: background 0.2s; }
+  .add-btn:active { background: var(--caramel); transform: scale(0.9); }
+  .add-btn.added { background: #4caf50; animation: pop 0.3s ease; }
+  @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.2)} 100%{transform:scale(1)} }
+
+  /* ── BOTTOM BAR ── */
+  .bottom-bar {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    /* FIX: respect iPhone home indicator with safe-area */
+    padding-bottom: var(--safe-bot);
+    height: calc(var(--btm-h) + var(--safe-bot));
+    background: rgba(250, 246, 240, 0.97);
+    /* FIX: use -webkit- prefix, fixed px value — NO CSS variables */
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(200, 135, 58, 0.15);
+    z-index: 98;
+    padding-left: 8px; padding-right: 8px;
+    align-items: flex-start;
+    justify-content: space-around;
+    padding-top: 0;
+    /* FIX: will-change helps Safari keep the fixed element crisp */
+    will-change: transform;
+  }
+  .bottom-bar-inner { display: flex; width: 100%; height: var(--btm-h); align-items: center; justify-content: space-around; }
+
+  .bottom-bar-item { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; padding: 8px 16px; border-radius: 14px; text-decoration: none; color: var(--muted); font-family: 'DM Sans', sans-serif; min-width: 60px; min-height: 54px; justify-content: center; -webkit-appearance: none; }
+  .bottom-bar-item:active { background: var(--warm); }
+  .bottom-bar-item .bb-icon { font-size: 1.3rem; }
+  .bottom-bar-item .bb-label { font-size: 0.62rem; letter-spacing: 0.04em; text-transform: uppercase; }
+  .bottom-bar-cart { background: var(--caramel); color: white; border-radius: 16px; position: relative; }
+  .bottom-bar-cart:active { background: var(--brown); }
+  .bottom-bar-cart .bb-label { color: white; }
+  .bb-badge { position: absolute; top: 6px; right: 6px; background: white; color: var(--caramel); border-radius: 50%; width: 18px; height: 18px; font-size: 0.62rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+  /* ── CART SIDEBAR ── */
+  .cart-overlay { position: fixed; inset: 0; background: rgba(26,18,8,0.5); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  /* FIX: no backdrop-filter on overlays — causes Safari compositing bugs */
+  .cart-overlay.open { opacity: 1; pointer-events: all; }
+
+  .cart-sidebar {
+    position: fixed; right: 0; top: 0; bottom: 0;
+    width: min(420px, 100%);
+    background: var(--cream);
+    z-index: 201;
+    display: flex; flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: -10px 0 40px rgba(26,18,8,0.12);
+    /* FIX: padding for notch areas */
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bot);
+  }
+  .cart-sidebar.open { transform: translateX(0); }
+
+  .cart-header { padding: 20px 20px 16px; border-bottom: 1px solid var(--rose); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .cart-title { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--dark); }
+  .close-btn { background: var(--warm); border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; -webkit-appearance: none; }
+  .close-btn:active { background: var(--rose); }
+
+  /* FIX: -webkit-overflow-scrolling for momentum scroll on iOS */
+  .cart-items { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 20px; }
+
+  .cart-item { display: flex; gap: 12px; align-items: center; padding: 14px 0; border-bottom: 1px solid rgba(200,135,58,0.1); animation: fadeUp 0.3s ease; }
+  .cart-item-emoji { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; flex-shrink: 0; background: var(--warm); }
+  .cart-item-info { flex: 1; min-width: 0; }
+  .cart-item-name { font-weight: 500; color: var(--dark); font-size: 0.9rem; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cart-item-price { color: var(--caramel); font-size: 0.88rem; font-weight: 500; }
+  .qty-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .qty-btn { background: var(--warm); border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; -webkit-appearance: none; }
+  .qty-btn:active { background: var(--rose); }
+  .qty-num { font-weight: 600; min-width: 20px; text-align: center; font-size: 0.95rem; }
+  .cart-empty { text-align: center; padding: 50px 20px; color: var(--muted); }
+  .cart-empty-icon { font-size: 3.5rem; margin-bottom: 14px; }
+  .cart-empty p { font-size: 0.9rem; line-height: 1.6; }
+
+  .cart-footer { padding: 16px 20px 20px; border-top: 1px solid var(--rose); flex-shrink: 0; }
+  .cart-total-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; }
+  .cart-total-label { font-size: 0.82rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .cart-total-amount { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--dark); }
+  .cart-total-amount span { font-size: 0.9rem; color: var(--muted); font-family: 'DM Sans', sans-serif; }
+  .checkout-btn { width: 100%; background: var(--dark); color: white; border: none; padding: 16px; border-radius: 14px; font-family: 'Playfair Display', serif; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 54px; -webkit-appearance: none; }
+  .checkout-btn:active { background: var(--caramel); }
+
+  /* ── PAYMENT MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(26,18,8,0.65);
+    /* FIX: no backdrop-filter here — triggers compositing flicker on iOS when combined with transforms */
+    z-index: 300;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: var(--cream);
+    border-radius: 28px 28px 0 0;
+    width: 100%;
+    /* FIX: dvh + fallback for iOS */
+    max-height: 93vh;
+    max-height: 93dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px 24px 40px;
+    /* FIX: extra padding for iPhone home indicator */
+    padding-bottom: calc(40px + var(--safe-bot));
+    transform: translateY(100%);
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -20px 60px rgba(26,18,8,0.2);
+    /* FIX: will-change avoids Safari dropping the element during animation */
+    will-change: transform;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+
+  .modal::before { content: ''; display: block; width: 40px; height: 4px; background: var(--rose); border-radius: 2px; margin: 12px auto 20px; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+  .modal-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--dark); }
+  .order-summary { background: var(--warm); border-radius: 14px; padding: 18px; margin-bottom: 22px; }
+  .order-summary-title { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--caramel); margin-bottom: 12px; }
+  .order-line { display: flex; justify-content: space-between; font-size: 0.88rem; color: var(--text); padding: 4px 0; }
+  .order-total-line { display: flex; justify-content: space-between; padding-top: 12px; margin-top: 10px; border-top: 1px solid var(--rose); font-weight: 600; color: var(--dark); }
+  .form-section-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: var(--dark); margin-bottom: 14px; margin-top: 20px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+  .form-group.full { grid-column: 1/-1; }
+  label { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+
+  input {
+    background: white;
+    border: 1.5px solid var(--rose);
+    border-radius: 10px;
+    padding: 13px 14px;
+    font-family: 'DM Sans', sans-serif;
+    /* FIX: MUST be 16px+ to prevent iOS Safari auto-zoom on focus */
+    font-size: 16px;
+    color: var(--dark);
+    outline: none;
+    min-height: 48px;
+    /* FIX: remove default iOS styling */
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 10px; /* needed after -webkit-appearance:none */
+    transition: border-color 0.2s;
+  }
+  input:focus { border-color: var(--caramel); }
+  input::placeholder { color: #b8a090; }
+
+  .card-icons { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .card-icon { background: white; border: 1.5px solid var(--rose); border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; color: var(--muted); font-weight: 700; cursor: pointer; min-height: 44px; display: flex; align-items: center; transition: all 0.2s; }
+  .card-icon.active, .card-icon:active { border-color: var(--caramel); color: var(--caramel); }
+
+  .pay-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #c8873a, #e4a84b);
+    color: white; border: none; padding: 18px; border-radius: 14px;
+    font-family: 'Playfair Display', serif; font-size: 1.1rem;
+    cursor: pointer; margin-top: 20px;
+    box-shadow: 0 6px 20px rgba(200,135,58,0.3);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 56px; -webkit-appearance: none;
+    transition: opacity 0.2s;
+  }
+  .pay-btn:active { opacity: 0.82; transform: scale(0.98); }
+
+  .secure-badge { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.75rem; color: var(--muted); margin-top: 10px; }
+
+  /* SUCCESS */
+  .success-state { text-align: center; padding: 30px 16px; display: none; }
+  .success-icon { width: 72px; height: 72px; background: linear-gradient(135deg,#4caf50,#66bb6a); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; margin: 0 auto 20px; animation: successPop 0.5s cubic-bezier(0.16,1,0.3,1); }
+  @keyframes successPop { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+  .success-state h2 { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--dark); margin-bottom: 10px; }
+  .success-state p { color: var(--muted); line-height: 1.6; font-size: 0.95rem; }
+  .order-number { display: inline-block; background: var(--warm); border: 1.5px solid var(--rose); padding: 7px 18px; border-radius: 50px; font-size: 0.85rem; color: var(--caramel); font-weight: 600; margin: 14px 0; letter-spacing: 0.06em; }
+
+  /* FEATURES */
+  .features { padding: 70px 60px; display: grid; grid-template-columns: repeat(3,1fr); gap: 36px; }
+  .feature { text-align: center; padding: 32px 16px; border-radius: 18px; transition: background 0.2s; }
+  .feature:hover { background: var(--warm); }
+  .feature-icon { font-size: 2.2rem; margin-bottom: 14px; }
+  .feature-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: var(--dark); margin-bottom: 8px; }
+  .feature-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+  /* FOOTER */
+  footer { background: var(--dark); color: rgba(250,246,240,0.7); padding: 60px; display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 36px; }
+  .footer-brand { font-family: 'Playfair Display', serif; font-size: 1.7rem; font-style: italic; color: var(--gold); margin-bottom: 14px; }
+  .footer-tagline { font-size: 0.86rem; line-height: 1.65; }
+  footer h4 { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 14px; }
+  footer ul { list-style: none; }
+  footer ul li { margin-bottom: 9px; }
+  footer ul a { color: rgba(250,246,240,0.6); text-decoration: none; font-size: 0.86rem; min-height: 44px; display: inline-flex; align-items: center; }
+  footer ul a:active { color: var(--gold); }
+  .footer-bottom { background: rgba(0,0,0,0.3); padding: 18px 60px; display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: rgba(250,246,240,0.35); }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: calc(var(--btm-h) + var(--safe-bot) + 14px);
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: var(--dark); color: white;
+    padding: 13px 24px; border-radius: 50px;
+    font-size: 0.88rem; z-index: 400;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex; align-items: center; gap: 7px;
+    white-space: nowrap;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    max-width: calc(100vw - 48px);
+    /* FIX: will-change so iOS doesn't blur the fixed toast text */
+    will-change: transform;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ══ TABLET ══ */
+  @media (max-width: 900px) {
+    nav { padding: 0 28px; }
+    .hero { padding: calc(var(--safe-top) + var(--nav-h) + 30px) 36px 70px; gap: 36px; }
+    .products { padding: 36px 20px 100px; }
+    .features { padding: 60px 36px; gap: 20px; }
+    footer { padding: 50px 36px; gap: 28px; }
+    .footer-bottom { padding: 16px 36px; }
+  }
+
+  /* ══ MOBILE ══ */
+  @media (max-width: 640px) {
+    :root { --nav-h: 60px; }
+    nav { padding: 0 16px; }
+    .nav-logo { font-size: 1.2rem; }
+    .nav-links { display: none; }
+    .hamburger { display: flex; }
+    .cart-btn { display: none; }
+
+    .hero {
+      grid-template-columns: 1fr;
+      min-height: auto;
+      padding: calc(var(--safe-top) + var(--nav-h) + 24px) 20px 44px;
+      text-align: center; gap: 28px;
+    }
+    .hero-btns { justify-content: center; }
+    .hero p { margin-left: auto; margin-right: auto; }
+    .hero::after { display: none; }
+
+    .hero-visual { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 10px; grid-template-columns: unset; grid-template-rows: unset; margin: 0 -20px; padding: 0 20px 4px; }
+    .hero-visual::-webkit-scrollbar { display: none; }
+    .hero-card { min-width: 150px; height: 170px; border-radius: 14px; flex-shrink: 0; }
+    .hero-card:first-child { min-width: 150px; }
+    .img-nyroll, .img-macaron, .img-cake { font-size: 3.2rem; }
+
+    .products { padding: 24px 14px calc(var(--btm-h) + var(--safe-bot) + 20px); }
+    .section-header { margin-bottom: 22px; }
+    .products-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .product-img { height: 130px; font-size: 3rem; }
+    .product-info { padding: 10px 10px 12px; }
+    .product-name { font-size: 0.9rem; }
+    .product-desc { display: none; }
+    .product-price { font-size: 1rem; }
+    .add-btn { width: 38px; height: 38px; font-size: 1.2rem; }
+
+    .categories { padding: 18px 14px 0; gap: 8px; }
+    .cat-pill { padding: 9px 14px; font-size: 0.78rem; }
+
+    .bottom-bar { display: flex; flex-direction: column; }
+
+    .features { grid-template-columns: 1fr; padding: 44px 20px; gap: 6px; }
+    .feature { padding: 22px 18px; }
+
+    footer { grid-template-columns: 1fr; padding: 40px 20px; /* FIX: safe area at bottom of footer */ padding-bottom: calc(40px + var(--safe-bot)); }
+    .footer-bottom { padding: 14px 20px; flex-direction: column; gap: 4px; text-align: center; padding-bottom: calc(14px + var(--safe-bot)); }
+
+    .form-row { grid-template-columns: 1fr; }
+  }
+
+  /* Tiny phones */
+  @media (max-width: 360px) {
+    .hero h1 { font-size: 2.1rem; }
+    .products-grid { grid-template-columns: 1fr; }
+    .product-img { height: 170px; font-size: 4rem; }
+    .product-desc { display: block; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Pâtisserie <span>Dorée</span></div>
+  <ul class="nav-links">
+    <li><a href="#productos">Productos</a></li>
+    <li><a href="#nosotros">Nosotros</a></li>
+    <li><a href="#contacto">Contacto</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="cart-btn" onclick="toggleCart()">🛒 Carrito <span class="cart-count" id="cartCount">0</span></button>
+    <button class="hamburger" id="hamburger" onclick="toggleDrawer()" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- MOBILE DRAWER -->
+<div class="mobile-drawer" id="mobileDrawer">
+  <a href="#productos" onclick="toggleDrawer()">🥐 Productos</a>
+  <a href="#nosotros" onclick="toggleDrawer()">🎂 Nosotros</a>
+  <a href="#contacto" onclick="toggleDrawer()">📍 Contacto</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">✨ Repostería Artesanal Premium</div>
+    <h1>El arte del<br><em>dulce</em> hecho<br>con amor</h1>
+    <p>Elaboramos cada pieza a mano con los mejores ingredientes. Desde los icónicos New York Rolls hasta macarons de temporada.</p>
+    <div class="hero-btns">
+      <a href="#productos" class="btn-primary">Ver Productos</a>
+      <a href="#nosotros" class="btn-outline">Nuestra Historia</a>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="hero-card"><div class="img-nyroll">🥐</div><div class="hero-card-label">★ New York Roll</div></div>
+    <div class="hero-card"><div class="img-macaron">🍬</div><div class="hero-card-label">Macarons</div></div>
+    <div class="hero-card"><div class="img-cake">🎂</div><div class="hero-card-label">Pasteles</div></div>
+  </div>
+</section>
+
+<!-- CATEGORIES -->
+<div class="categories" id="nosotros">
+  <button class="cat-pill active" onclick="filterProducts('todos',this)">Todos</button>
+  <button class="cat-pill" onclick="filterProducts('rolls',this)">NY Rolls</button>
+  <button class="cat-pill" onclick="filterProducts('pasteles',this)">Pasteles</button>
+  <button class="cat-pill" onclick="filterProducts('macarons',this)">Macarons</button>
+  <button class="cat-pill" onclick="filterProducts('galletas',this)">Galletas</button>
+  <button class="cat-pill" onclick="filterProducts('cupcakes',this)">Cupcakes</button>
+</div>
+
+<!-- PRODUCTS -->
+<section class="products" id="productos">
+  <div class="section-header">
+    <p class="section-eyebrow">Menú de Temporada</p>
+    <h2 class="section-title">Nuestros <em>Favoritos</em></h2>
+  </div>
+  <div class="products-grid" id="productsGrid"></div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="feature"><div class="feature-icon">🌿</div><h3 class="feature-title">Ingredientes Naturales</h3><p class="feature-desc">Sin conservantes. Frescos cada día.</p></div>
+  <div class="feature"><div class="feature-icon">🚚</div><h3 class="feature-title">Entrega a Domicilio</h3><p class="feature-desc">Pedidos antes de las 2pm, entregados el mismo día.</p></div>
+  <div class="feature"><div class="feature-icon">🎁</div><h3 class="feature-title">Cajas Personalizadas</h3><p class="feature-desc">Para regalos, eventos o consentirte.</p></div>
+</section>
+
+<!-- FOOTER -->
+<footer id="contacto">
+  <div><div class="footer-brand">Pâtisserie Dorée</div><p class="footer-tagline">Repostería artesanal con pasión. Cada pieza es una obra de arte comestible.</p></div>
+  <div><h4>Navegación</h4><ul><li><a href="#productos">Productos</a></li><li><a href="#nosotros">Nosotros</a></li><li><a href="#">Blog</a></li></ul></div>
+  <div><h4>Contacto</h4><ul><li><a href="#">📍 Ibagué, Colombia</a></li><li><a href="#">📞 +57 300 000 0000</a></li><li><a href="#">✉️ hola@patisseriedoree.co</a></li><li><a href="#">📸 @patisseriedoree</a></li></ul></div>
+</footer>
+<div class="footer-bottom">
+  <span>© 2025 Pâtisserie Dorée. Todos los derechos reservados.</span>
+  <span>🔒 Pagos seguros SSL</span>
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar" id="bottomBar">
+  <div class="bottom-bar-inner">
+    <a href="#" class="bottom-bar-item" onclick="toggleDrawer();return false"><span class="bb-icon">☰</span><span class="bb-label">Menú</span></a>
+    <a href="#productos" class="bottom-bar-item"><span class="bb-icon">🥐</span><span class="bb-label">Productos</span></a>
+    <button class="bottom-bar-item bottom-bar-cart" onclick="toggleCart()">
+      <span class="bb-icon">🛒</span><span class="bb-label">Carrito</span>
+      <span class="bb-badge" id="bbCartCount">0</span>
+    </button>
+    <a href="#contacto" class="bottom-bar-item"><span class="bb-icon">📍</span><span class="bb-label">Contacto</span></a>
+  </div>
+</div>
+
+<!-- CART -->
+<div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+<div class="cart-sidebar" id="cartSidebar">
+  <div class="cart-header"><h2 class="cart-title">Tu Carrito</h2><button class="close-btn" onclick="toggleCart()">✕</button></div>
+  <div class="cart-items" id="cartItems"></div>
+  <div class="cart-footer" id="cartFooter" style="display:none">
+    <div class="cart-total-row">
+      <span class="cart-total-label">Total</span>
+      <span class="cart-total-amount" id="cartTotalDisplay">$0 <span>COP</span></span>
+    </div>
+    <button class="checkout-btn" onclick="openPayment()">💳 Ir a Pagar</button>
+  </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleModalClick(event)">
+  <div class="modal" id="modalBox">
+    <div id="paymentForm">
+      <div class="modal-header"><h2 class="modal-title">Pagar Pedido</h2><button class="close-btn" onclick="closePayment()">✕</button></div>
+      <div class="order-summary">
+        <div class="order-summary-title">Resumen del pedido</div>
+        <div id="orderLines"></div>
+        <div class="order-total-line"><span>Total</span><span id="orderTotal">$0</span></div>
+      </div>
+      <div class="form-section-title">Información de entrega</div>
+      <div class="form-group"><label>Nombre completo</label><input type="text" placeholder="María González" id="inputName" autocomplete="name"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Teléfono</label><input type="tel" placeholder="+57 300..." id="inputPhone" autocomplete="tel" inputmode="tel"></div>
+        <div class="form-group"><label>Ciudad</label><input type="text" placeholder="Ibagué" id="inputCity" autocomplete="address-level2"></div>
+      </div>
+      <div class="form-group"><label>Dirección</label><input type="text" placeholder="Cra 7 #45-23" id="inputAddress" autocomplete="street-address"></div>
+      <div class="form-section-title">Método de pago</div>
+      <div class="card-icons">
+        <div class="card-icon active">VISA</div>
+        <div class="card-icon">MC</div>
+        <div class="card-icon">AMEX</div>
+        <div class="card-icon">PSE</div>
+        <div class="card-icon">Nequi</div>
+      </div>
+      <div class="form-group"><label>Número de tarjeta</label><input type="tel" placeholder="4242 4242 4242 4242" id="inputCard" maxlength="19" oninput="formatCard(this)" inputmode="numeric" autocomplete="cc-number"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Expiración</label><input type="tel" placeholder="MM / AA" maxlength="7" oninput="formatExpiry(this)" inputmode="numeric" autocomplete="cc-exp"></div>
+        <div class="form-group"><label>CVV</label><input type="tel" placeholder="•••" maxlength="3" inputmode="numeric" autocomplete="cc-csc"></div>
+      </div>
+      <div class="form-group"><label>Nombre en la tarjeta</label><input type="text" placeholder="MARÍA GONZÁLEZ" autocomplete="cc-name"></div>
+      <button class="pay-btn" onclick="processPayment()">🔒 Pagar <span id="payBtnAmount">$0</span></button>
+      <div class="secure-badge">🔒 Pago cifrado SSL de 256 bits</div>
+    </div>
+    <div class="success-state" id="successState">
+      <div class="success-icon">✓</div>
+      <h2>¡Pedido Confirmado!</h2>
+      <div class="order-number" id="orderNumber">#ORD-000000</div>
+      <p>Tu pedido fue recibido y se preparará con todo el amor. Recibirás confirmación pronto.</p>
+      <br><br>
+      <button class="btn-primary" onclick="closePayment();clearCart()">Continuar Comprando</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const products=[
+  {id:1,name:'NY Roll Clásico',desc:'Croissant laminado relleno de crema de vainilla y azúcar perlada.',price:18000,emoji:'🥐',category:'rolls',badge:'Más Pedido'},
+  {id:2,name:'NY Roll Nutella',desc:'Relleno de Nutella artesanal y avellanas tostadas.',price:20000,emoji:'🍫',category:'rolls',badge:'Nuevo'},
+  {id:3,name:'NY Roll Matcha',desc:'Masa de matcha, crema de frambuesa y white chocolate.',price:22000,emoji:'🍵',category:'rolls'},
+  {id:4,name:'NY Roll Dulce de Leche',desc:'Dulce de leche artesanal con coco tostado.',price:19000,emoji:'🍯',category:'rolls'},
+  {id:5,name:'Macaron Frambuesa',desc:'Concha crujiente y ganache de frambuesa fresca.',price:8500,emoji:'🩷',category:'macarons'},
+  {id:6,name:'Macaron Pistacho',desc:'Crema de pistacho iranio. Un clásico parisino.',price:9000,emoji:'💚',category:'macarons',badge:'Premium'},
+  {id:7,name:'Pastel Tres Leches',desc:'Bizcocho empapado en tres leches, cubierto de chantilly.',price:55000,emoji:'🎂',category:'pasteles'},
+  {id:8,name:'Tarta de Limón',desc:'Base crujiente, crema de limón y merengue italiano.',price:48000,emoji:'🍋',category:'pasteles'},
+  {id:9,name:'Cupcake Red Velvet',desc:'Terciopelo rojo con frosting de cream cheese.',price:12000,emoji:'🧁',category:'cupcakes',badge:'❤️'},
+  {id:10,name:'Cupcake Vainilla',desc:'Masa de vainilla bourbon con buttercream italiano.',price:11000,emoji:'🌸',category:'cupcakes'},
+  {id:11,name:'Galletas de Mantequilla',desc:'Seis unidades decoradas a mano con glasa real.',price:24000,emoji:'🍪',category:'galletas'},
+  {id:12,name:'Brownies de Chocolate',desc:'Cuatro brownies fudgy con chocolate belga.',price:28000,emoji:'🍫',category:'galletas'},
+];
+let cart=[];
+const fmt=n=>'$'+n.toLocaleString('es-CO');
+const getBg=c=>({
+  rolls:'linear-gradient(135deg,#f5c47a,#e4a84b,#c8873a)',
+  macarons:'linear-gradient(135deg,#fde8f0,#f4b8d0,#e896b8)',
+  pasteles:'linear-gradient(135deg,#fde8cc,#f5c47a,#e49a40)',
+  cupcakes:'linear-gradient(135deg,#fce4ec,#f48fb1,#e91e63,#c2185b)',
+  galletas:'linear-gradient(135deg,#ffe0b2,#ffb74d,#f57c00)',
+}[c]||'linear-gradient(135deg,#f5c47a,#c8873a)');
+
+function renderProducts(cat='todos'){
+  const f=cat==='todos'?products:products.filter(p=>p.category===cat);
+  document.getElementById('productsGrid').innerHTML=f.map(p=>`
+    <div class="product-card">
+      ${p.badge?`<div class="product-badge">${p.badge}</div>`:''}
+      <div class="product-img" style="background:${getBg(p.category)}">${p.emoji}</div>
+      <div class="product-info">
+        <h3 class="product-name">${p.name}</h3>
+        <p class="product-desc">${p.desc}</p>
+        <div class="product-footer">
+          <div class="product-price">${fmt(p.price)} <span>COP</span></div>
+          <button class="add-btn" onclick="addToCart(${p.id},this)">+</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function filterProducts(cat,el){
+  document.querySelectorAll('.cat-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  renderProducts(cat);
+  el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+}
+
+function addToCart(id,btn){
+  const p=products.find(x=>x.id===id);
+  const ex=cart.find(i=>i.id===id);
+  ex?ex.qty++:cart.push({...p,qty:1});
+  updateCartUI();
+  btn.classList.add('added');btn.textContent='✓';
+  setTimeout(()=>{btn.classList.remove('added');btn.textContent='+'},800);
+  showToast(`✨ ${p.name} añadido`);
+}
+
+function updateCartUI(){
+  const total=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const count=cart.reduce((s,i)=>s+i.qty,0);
+  document.getElementById('cartCount').textContent=count;
+  document.getElementById('bbCartCount').textContent=count;
+  document.getElementById('cartTotalDisplay').innerHTML=fmt(total)+' <span>COP</span>';
+  document.getElementById('cartFooter').style.display=cart.length?'block':'none';
+  const el=document.getElementById('cartItems');
+  if(!cart.length){el.innerHTML=`<div class="cart-empty"><div class="cart-empty-icon">🧺</div><p>Tu carrito está vacío.<br>¡Agrega algo delicioso!</p></div>`;return}
+  el.innerHTML=cart.map(i=>`
+    <div class="cart-item">
+      <div class="cart-item-emoji">${i.emoji}</div>
+      <div class="cart-item-info"><div class="cart-item-name">${i.name}</div><div class="cart-item-price">${fmt(i.price*i.qty)}</div></div>
+      <div class="qty-controls">
+        <button class="qty-btn" onclick="changeQty(${i.id},-1)">−</button>
+        <span class="qty-num">${i.qty}</span>
+        <button class="qty-btn" onclick="changeQty(${i.id},1)">+</button>
+      </div>
+    </div>`).join('');
+}
+
+function changeQty(id,d){
+  const item=cart.find(i=>i.id===id);if(!item)return;
+  item.qty+=d;if(item.qty<=0)cart=cart.filter(i=>i.id!==id);
+  updateCartUI();
+}
+
+// FIX: iOS scroll lock — body overflow:hidden alone doesn't work on Safari.
+// We store scroll position and use position:fixed trick instead.
+let scrollLockY=0;
+function lockScroll(){
+  scrollLockY=window.scrollY;
+  document.body.style.position='fixed';
+  document.body.style.top=`-${scrollLockY}px`;
+  document.body.style.width='100%';
+  document.body.style.overflowY='scroll';
+}
+function unlockScroll(){
+  document.body.style.position='';
+  document.body.style.top='';
+  document.body.style.width='';
+  document.body.style.overflowY='';
+  window.scrollTo(0,scrollLockY);
+}
+
+function toggleCart(){
+  const s=document.getElementById('cartSidebar');
+  document.getElementById('cartOverlay').classList.toggle('open');
+  s.classList.toggle('open');
+  s.classList.contains('open')?lockScroll():unlockScroll();
+}
+
+function openPayment(){
+  toggleCart();
+  const total=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  document.getElementById('orderLines').innerHTML=cart.map(i=>`<div class="order-line"><span>${i.name} x${i.qty}</span><span>${fmt(i.price*i.qty)}</span></div>`).join('');
+  document.getElementById('orderTotal').textContent=fmt(total)+' COP';
+  document.getElementById('payBtnAmount').textContent=fmt(total)+' COP';
+  document.getElementById('paymentForm').style.display='block';
+  document.getElementById('successState').style.display='none';
+  document.getElementById('modalOverlay').classList.add('open');
+  lockScroll();
+  setTimeout(()=>document.getElementById('modalBox').scrollTop=0,50);
+}
+
+function closePayment(){
+  document.getElementById('modalOverlay').classList.remove('open');
+  unlockScroll();
+}
+
+function handleModalClick(e){if(e.target===document.getElementById('modalOverlay'))closePayment();}
+
+function processPayment(){
+  const name=document.getElementById('inputName').value.trim();
+  const phone=document.getElementById('inputPhone').value.trim();
+  const address=document.getElementById('inputAddress').value.trim();
+  const card=document.getElementById('inputCard').value.trim();
+  if(!name||!phone||!address){showToast('⚠️ Completa tus datos de entrega');return}
+  if(card.length<19){showToast('⚠️ Ingresa un número de tarjeta válido');return}
+  const btn=document.querySelector('.pay-btn');
+  btn.innerHTML='⏳ Procesando...';btn.disabled=true;
+  setTimeout(()=>{
+    document.getElementById('paymentForm').style.display='none';
+    document.getElementById('successState').style.display='block';
+    document.getElementById('orderNumber').textContent='#ORD-'+Math.floor(Math.random()*900000+100000);
+    btn.disabled=false;
+    document.getElementById('modalBox').scrollTop=0;
+  },2000);
+}
+
+function clearCart(){cart=[];updateCartUI();}
+function formatCard(i){let v=i.value.replace(/\D/g,'').substring(0,16);i.value=v.replace(/(.{4})/g,'$1 ').trim();}
+function formatExpiry(i){let v=i.value.replace(/\D/g,'').substring(0,4);if(v.length>=2)v=v.substring(0,2)+' / '+v.substring(2);i.value=v;}
+
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function toggleDrawer(){
+  document.getElementById('mobileDrawer').classList.toggle('open');
+  document.getElementById('hamburger').classList.toggle('open');
+}
+
+document.querySelectorAll('.card-icon').forEach(icon=>{
+  icon.addEventListener('click',()=>{
+    document.querySelectorAll('.card-icon').forEach(i=>i.classList.remove('active'));
+    icon.classList.add('active');
+  });
+});
+
+document.addEventListener('click',e=>{
+  const d=document.getElementById('mobileDrawer'),h=document.getElementById('hamburger');
+  if(d.classList.contains('open')&&!d.contains(e.target)&&!h.contains(e.target)){
+    d.classList.remove('open');h.classList.remove('open');
+  }
+});
+
+renderProducts();
+updateCartUI();
+</script>
+</body>
+</html>
